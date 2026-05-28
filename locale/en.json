@@ -24,7 +24,15 @@
     "duration_hm": "{h}h {m}m",
     "duration_m": "{m}m",
     "duration_s": "{s}s",
-    "weekdays": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+    "weekdays": [
+        "Mon",
+        "Tue",
+        "Wed",
+        "Thu",
+        "Fri",
+        "Sat",
+        "Sun"
+    ],
     "loading": "Usage Monitor: Loading...",
     "error_label": "Usage Monitor: Error",
     "connection_error": "Could not connect to Anthropic API.",
@@ -53,5 +61,9 @@
     "status_updated_s": "Updated {s}s ago",
     "status_next_update": "Next update in {duration}",
     "status_refreshing": "Refreshing...",
-    "already_running": "Usage Monitor for Claude v{running_version} is already running.\n\nDo you want to replace the running instance?"
+    "already_running": "Usage Monitor for Claude v{running_version} is already running.\n\nDo you want to replace the running instance?",
+    "menu_icon_style": "Icon style",
+    "icon_style_classic": "Classic",
+    "icon_style_compact": "Compact",
+    "menu_dblclick_open_claude": "Double-click opens Claude Desktop"
 }

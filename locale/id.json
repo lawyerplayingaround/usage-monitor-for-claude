@@ -61,5 +61,9 @@
     "status_updated_s": "Diperbarui {s}d yang lalu",
     "status_next_update": "Pembaruan berikutnya dalam {duration}",
     "status_refreshing": "Memperbarui...",
-    "already_running": "Usage Monitor for Claude v{running_version} sudah berjalan.\n\nApakah Anda ingin mengganti instans yang sedang berjalan?"
+    "already_running": "Usage Monitor for Claude v{running_version} sudah berjalan.\n\nApakah Anda ingin mengganti instans yang sedang berjalan?",
+    "menu_icon_style": "Icon style",
+    "icon_style_classic": "Classic",
+    "icon_style_compact": "Compact",
+    "menu_dblclick_open_claude": "Double-click opens Claude Desktop"
 }

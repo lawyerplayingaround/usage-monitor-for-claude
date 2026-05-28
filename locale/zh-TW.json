@@ -61,5 +61,9 @@
     "status_updated_s": "{s}秒前更新",
     "status_next_update": "{duration}後更新",
     "status_refreshing": "重新整理中...",
-    "already_running": "Usage Monitor for Claude v{running_version} 已在執行中。\n\n是否要取代正在執行的執行個體？"
+    "already_running": "Usage Monitor for Claude v{running_version} 已在執行中。\n\n是否要取代正在執行的執行個體？",
+    "menu_icon_style": "Icon style",
+    "icon_style_classic": "Classic",
+    "icon_style_compact": "Compact",
+    "menu_dblclick_open_claude": "Double-click opens Claude Desktop"
 }

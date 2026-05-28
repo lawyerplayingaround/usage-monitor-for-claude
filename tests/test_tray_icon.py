@@ -422,5 +422,127 @@ class TestCreateStatusImage(unittest.TestCase):
         self.assertEqual(img.size, (64, 64))
 
 
+class TestCreateIconImageCompactLayout(unittest.TestCase):
+    """Tests for the compact icon layout."""
+
+    def setUp(self):
+        tray_icon_mod.load_font.cache_clear()
+
+    def tearDown(self):
+        tray_icon_mod.load_font.cache_clear()
+
+    def test_returns_64x64_rgba_image(self):
+        """Compact still produces a 64x64 RGBA image."""
+        img = tray_icon_mod.create_icon_image(45, 0, layout=tray_icon_mod.LAYOUT_COMPACT)
+
+        self.assertEqual(img.size, (64, 64))
+        self.assertEqual(img.mode, 'RGBA')
+
+    def test_low_usage_renders_without_error(self):
+        """Low percentage renders cleanly in compact mode."""
+        img = tray_icon_mod.create_icon_image(15, 5, layout=tray_icon_mod.LAYOUT_COMPACT)
+        self.assertEqual(img.size, (64, 64))
+
+    def test_high_usage_renders_without_error(self):
+        """High percentage renders cleanly in compact mode."""
+        img = tray_icon_mod.create_icon_image(90, 50, layout=tray_icon_mod.LAYOUT_COMPACT)
+        self.assertEqual(img.size, (64, 64))
+
+    @patch.object(tray_icon_mod, 'load_font')
+    def test_percent_uses_size_58_regular_arial(self, mock_font):
+        """Compact mode uses size 58 regular Arial for the percentage text."""
+        mock_font.return_value = _real_font()
+
+        tray_icon_mod.create_icon_image(45, 0, layout=tray_icon_mod.LAYOUT_COMPACT)
+
+        mock_font.assert_any_call(58, bold=False)
+
+    @patch.object(tray_icon_mod, 'load_font')
+    def test_zero_usage_still_uses_size_42_for_letter_c(self, mock_font):
+        """Compact mode keeps the legacy 'C' glyph for the zero-usage state."""
+        mock_font.return_value = _real_font()
+
+        tray_icon_mod.create_icon_image(0, 0, layout=tray_icon_mod.LAYOUT_COMPACT)
+
+        mock_font.assert_any_call(42)
+
+    @patch.object(tray_icon_mod, 'load_font')
+    def test_exhausted_state_shows_cross(self, mock_font):
+        """When a quota is at 100% with no extra credit, compact mode shows the cross glyph."""
+        mock_font.return_value = _real_font()
+
+        tray_icon_mod.create_icon_image(100, 30, layout=tray_icon_mod.LAYOUT_COMPACT)
+
+        mock_font.assert_any_call(36, symbol=True)
+
+    @patch.object(tray_icon_mod, 'load_font')
+    def test_exhausted_with_extra_credit_shows_dollar(self, mock_font):
+        """When a quota is at 100% but extra credits are available, compact shows '$'."""
+        mock_font.return_value = _real_font()
+
+        tray_icon_mod.create_icon_image(
+            100, 30, extra_usage_available=True,
+            layout=tray_icon_mod.LAYOUT_COMPACT,
+        )
+
+        mock_font.assert_any_call(42)
+
+    def test_bottom_quota_exhaustion_still_triggers_alert_glyph(self):
+        """A second-field exhaustion (pct_bottom>=100) still shifts the glyph to '$'/cross."""
+        compact = tray_icon_mod.create_icon_image(20, 100, layout=tray_icon_mod.LAYOUT_COMPACT)
+        normal = tray_icon_mod.create_icon_image(20, 50, layout=tray_icon_mod.LAYOUT_COMPACT)
+
+        self.assertNotEqual(compact.tobytes(), normal.tobytes())
+
+    def test_compact_and_classic_produce_different_images(self):
+        """Same usage, different layouts produce visibly different icons."""
+        classic = tray_icon_mod.create_icon_image(40, 60, layout=tray_icon_mod.LAYOUT_CLASSIC)
+        compact = tray_icon_mod.create_icon_image(40, 60, layout=tray_icon_mod.LAYOUT_COMPACT)
+
+        self.assertNotEqual(classic.tobytes(), compact.tobytes())
+
+    def test_default_layout_is_classic(self):
+        """Omitting layout keyword keeps upstream classic behavior."""
+        explicit_classic = tray_icon_mod.create_icon_image(40, 60, layout=tray_icon_mod.LAYOUT_CLASSIC)
+        implicit = tray_icon_mod.create_icon_image(40, 60)
+
+        self.assertEqual(explicit_classic.tobytes(), implicit.tobytes())
+
+
+class TestLoadFontBoldParameter(unittest.TestCase):
+    """Tests for the bold=False fallback ordering in load_font."""
+
+    def setUp(self):
+        tray_icon_mod.load_font.cache_clear()
+
+    def tearDown(self):
+        tray_icon_mod.load_font.cache_clear()
+
+    @patch.object(tray_icon_mod, 'ImageFont')
+    @patch.dict('os.environ', {'WINDIR': r'C:\Windows'})
+    def test_bold_false_prefers_regular_arial(self, mock_image_font):
+        """bold=False asks for arial.ttf first, then arialbd.ttf."""
+        mock_font = MagicMock()
+        mock_image_font.truetype.return_value = mock_font
+
+        tray_icon_mod.load_font(58, bold=False)
+
+        first_call_path = mock_image_font.truetype.call_args_list[0][0][0]
+        self.assertIn('arial.ttf', first_call_path.lower())
+        self.assertNotIn('arialbd', first_call_path.lower())
+
+    @patch.object(tray_icon_mod, 'ImageFont')
+    @patch.dict('os.environ', {'WINDIR': r'C:\Windows'})
+    def test_bold_default_true_prefers_bold(self, mock_image_font):
+        """Default behavior keeps preferring arialbd.ttf (upstream behavior)."""
+        mock_font = MagicMock()
+        mock_image_font.truetype.return_value = mock_font
+
+        tray_icon_mod.load_font(40)
+
+        first_call_path = mock_image_font.truetype.call_args_list[0][0][0]
+        self.assertIn('arialbd.ttf', first_call_path.lower())
+
+
 if __name__ == '__main__':
     unittest.main()

@@ -32,6 +32,12 @@ from .settings import (
 from .formatting import elapsed_pct, field_period, format_credits, format_tooltip, parse_field_name, popup_label
 from .i18n import T
 from .popup import UsagePopup
+from .preferences import (
+    ICON_LAYOUT_CLASSIC, ICON_LAYOUT_COMPACT,
+    get_dblclick_open_claude, get_icon_layout,
+    set_dblclick_open_claude, set_icon_layout,
+)
+from .tray_dblclick import IconWithDoubleClick, launch_claude_desktop
 from .tray_icon import create_icon_image, create_status_image, taskbar_uses_light_theme, watch_theme_change
 
 __all__ = ['UsageMonitorForClaude', 'crash_log']
@@ -73,15 +79,36 @@ class UsageMonitorForClaude:
         # Theme state
         self._light_taskbar = taskbar_uses_light_theme()
 
+        # User preferences read once at startup; menu toggles trigger a
+        # restart so each launch sees a consistent value throughout its
+        # lifetime.
+        self._icon_layout = get_icon_layout()
+        self._dblclick_open_claude = get_dblclick_open_claude()
+
         self.restart_requested = False
 
-        self.icon = pystray.Icon(
+        self.icon = IconWithDoubleClick(
             'usage_monitor',
-            icon=create_icon_image(0, 0, self._light_taskbar),
+            icon=create_icon_image(0, 0, self._light_taskbar, layout=self._icon_layout),
             title=T['loading'],
+            on_double_click=launch_claude_desktop if self._dblclick_open_claude else None,
             menu=pystray.Menu(
                 pystray.MenuItem(T['menu_show'], self.on_show_popup, default=True),
                 pystray.Menu.SEPARATOR,
+                pystray.MenuItem(T['menu_icon_style'], pystray.Menu(
+                    pystray.MenuItem(
+                        T['icon_style_classic'], self.on_set_icon_layout_classic,
+                        checked=lambda item: get_icon_layout() == ICON_LAYOUT_CLASSIC,
+                    ),
+                    pystray.MenuItem(
+                        T['icon_style_compact'], self.on_set_icon_layout_compact,
+                        checked=lambda item: get_icon_layout() == ICON_LAYOUT_COMPACT,
+                    ),
+                )),
+                pystray.MenuItem(
+                    T['menu_dblclick_open_claude'], self.on_toggle_dblclick_open_claude,
+                    checked=lambda item: get_dblclick_open_claude(),
+                ),
                 pystray.MenuItem(
                     T['autostart'], self.on_toggle_autostart,
                     checked=lambda item: is_autostart_enabled(),
@@ -115,6 +142,20 @@ class UsageMonitorForClaude:
 
     def on_toggle_autostart(self, icon: Any = None, item: Any = None) -> None:
         set_autostart(not is_autostart_enabled())
+
+    def on_set_icon_layout_classic(self, icon: Any = None, item: Any = None) -> None:
+        if get_icon_layout() != ICON_LAYOUT_CLASSIC:
+            set_icon_layout(ICON_LAYOUT_CLASSIC)
+            self.on_restart(icon, item)
+
+    def on_set_icon_layout_compact(self, icon: Any = None, item: Any = None) -> None:
+        if get_icon_layout() != ICON_LAYOUT_COMPACT:
+            set_icon_layout(ICON_LAYOUT_COMPACT)
+            self.on_restart(icon, item)
+
+    def on_toggle_dblclick_open_claude(self, icon: Any = None, item: Any = None) -> None:
+        set_dblclick_open_claude(not get_dblclick_open_claude())
+        self.on_restart(icon, item)
 
     def on_restart(self, icon: Any = None, item: Any = None) -> None:
         self.restart_requested = True
@@ -236,6 +277,7 @@ class UsageMonitorForClaude:
                 mode_top=top_mode, mode_bottom=bottom_mode,
                 time_pct_top=time_pct_top, time_pct_bottom=time_pct_bottom,
                 extra_usage_available=extra_usage_available,
+                layout=self._icon_layout,
             )
         self.icon.title = format_tooltip(data)
 
