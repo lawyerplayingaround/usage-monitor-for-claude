@@ -1,13 +1,28 @@
 # Usage Monitor for Claude
 
-[![Feature Ideas](https://img.shields.io/badge/Feature_Ideas-Vote_%26_Discuss-blue?style=for-the-badge&logo=github)](https://github.com/jens-duttke/usage-monitor-for-claude/discussions/categories/ideas)
-[![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-ff69b4?style=for-the-badge&logo=github)](https://github.com/sponsors/jens-duttke)
+> **This is a personal fork of [`jens-duttke/usage-monitor-for-claude`](https://github.com/jens-duttke/usage-monitor-for-claude).**
+> All credit for the original app goes to [@jens-duttke](https://github.com/jens-duttke). The original is what most users probably want; this fork only differs in a handful of UX preferences (see [What this fork adds](#what-this-fork-adds) below). The original's documentation, security promises, and APIs all carry over unchanged.
+>
+> **AI assistance disclosure.** Both the code added by this fork and the icon artwork were developed in collaboration with Claude (Anthropic), with every change reviewed and tested by the fork maintainer before publishing. Commits authored against the fork carry an `Assisted-by: Claude (Anthropic)` trailer.
 
 **Monitor your Claude rate limits in real time - right from your Windows system tray.**
 
 A native Windows tray app that shows your Claude usage at a glance - lightweight, portable, and fully auditable. Rate limits are shared across claude.ai, Claude Code, Claude Code Cowork, and IDE extensions for VS Code and JetBrains - always know how much of your session and weekly limits (Sonnet, Opus, Cowork, and any future quota types) you have left.
 
 ![Detail popup showing account info and usage bars](screenshot.png)
+
+## What this fork adds
+
+Every change below is opt-in via the tray right-click menu. The upstream behavior remains the default for anyone who picks the Classic icon style and keeps the double-click action off.
+
+- **Compact icon layout** (right-click → Icon style → Compact). A single bar (the 5-hour session) instead of two, with a larger thin percentage on top. Designed for tighter legibility after the Windows tray downscales the icon to ~16-24 px. Switching back to Classic restores upstream's two-bar layout. Both options live alongside the existing `icon_fields` JSON setting.
+- **Double-click opens Claude Desktop** (right-click → Double-click opens Claude Desktop). Single click keeps showing the usage popup; double click launches the installed Claude Desktop app via its registered `claude:` URL handler (with a `claude.ai` web fallback if Claude Desktop is not installed).
+- **Optional Windows installer** in addition to the portable EXE. The installer (`UsageMonitorForClaude-Setup-vX.Y.Z.exe`) places the app under `%LOCALAPPDATA%\UsageMonitorForClaude`, registers a Start Menu shortcut and (optionally) autostart, and shows up in Add / Remove Programs for clean uninstall. The portable EXE distribution is unchanged from upstream - both ship side-by-side in each fork release. Per-user install only, no admin rights required.
+- **New application icon** - a coin with concentric progress arcs on a blue gradient ground. Same monochrome theme-aware tray rendering as upstream; this icon is what Windows shows for the EXE in Explorer, in the installer wizard, and in Add / Remove Programs.
+
+These features are also persisted in the Windows registry under `HKCU\Software\UsageMonitorForClaude`, following the same pattern upstream uses for its `Autostart` toggle. No file writes are introduced - the upstream's read-only-app guarantee still holds.
+
+For implementation notes and how to rebuild from source, see [`BUILD.md`](BUILD.md).
 
 ## Features
 

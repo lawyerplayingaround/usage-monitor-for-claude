@@ -7,7 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-[Show all code changes](https://github.com/jens-duttke/usage-monitor-for-claude/compare/v1.15.1...HEAD)
+> Fork notice: entries below this line are introduced by the `lawyerplayingaround` fork. All credit for the original app goes to [@jens-duttke](https://github.com/jens-duttke). Both code and the new application icon were developed with Claude (Anthropic) assistance, then reviewed and tested by the fork maintainer.
+
+### Added
+
+- Compact tray icon layout (right-click → Icon style → Compact). A single progress bar (the upper `icon_fields` entry, the 5-hour session by default) and a larger thin percentage text positioned above, aimed at legibility after the Windows tray downscales the 64x64 icon to ~16-24 px. The original two-bar layout remains available as "Classic" in the same submenu.
+- Double-click on the tray icon launches Claude Desktop (right-click → Double-click opens Claude Desktop). Single click still opens the usage popup; the popup gains a short ~120 ms defer when this option is enabled so a dblclick can cancel it. The action uses the registered `claude:` URL handler when Claude Desktop is installed, with a `claude.ai` fallback otherwise.
+- New application icon (Explorer / installer wizard / Add/Remove Programs / Start Menu shortcut): a coin with concentric progress arcs on a blue gradient ground. The dynamic tray rendering is unchanged - the percent + bar icon is still produced by the existing programmatic renderer.
+- Optional Windows installer (`UsageMonitorForClaude-Setup-vX.Y.Z.exe`) alongside the original portable EXE. Per-user install to `%LOCALAPPDATA%\UsageMonitorForClaude`, no admin rights required, with optional autostart, optional Desktop shortcut, a Start Menu group, and registration in Add/Remove Programs. Both the portable EXE and the installer EXE ship from each fork release.
+- New module `usage_monitor_for_claude/preferences.py` mirrors the existing `autostart.py` pattern. Persists the icon-layout and double-click-action choices under `HKCU\Software\UsageMonitorForClaude` (registry, not files), and is covered by `tests/test_preferences.py`.
+
+### Changed
+
+- Tray-icon right-click menu has two new entries (Icon style submenu and Double-click opens Claude Desktop toggle). Toggling either writes the new value to the registry and triggers an app restart (same pattern the existing Restart entry uses) so the change takes effect immediately.
+
+[Show all code changes](https://github.com/lawyerplayingaround/usage-monitor-for-claude/compare/v1.15.1...HEAD)
 
 ## [1.15.1] - 2026-05-17
 
