@@ -36,7 +36,7 @@ import webbrowser
 import winreg
 from typing import Any, Callable
 
-import pystray  # type: ignore[import-untyped]
+import pystray  # type: ignore[import-untyped]  # no type stubs available
 
 __all__ = ['IconWithDoubleClick', 'launch_claude_desktop']
 
@@ -63,7 +63,7 @@ _CLAUDE_URI_REG_KEY = r'claude\shell\open\command'
 _CLAUDE_WEB_FALLBACK = 'https://claude.ai/'
 
 
-class IconWithDoubleClick(pystray.Icon):  # type: ignore[misc]
+class IconWithDoubleClick(pystray.Icon):  # type: ignore[misc]  # untyped base class
     """``pystray.Icon`` subclass that distinguishes single from double click.
 
     Parameters
@@ -89,7 +89,7 @@ class IconWithDoubleClick(pystray.Icon):  # type: ignore[misc]
         self._last_dblclick_at: float = 0.0
         self._click_state_lock = threading.Lock()
 
-    def _on_notify(self, wparam: int, lparam: int) -> None:  # type: ignore[override]
+    def _on_notify(self, wparam: int, lparam: int) -> None:  # type: ignore[override]  # base hook is untyped
         if lparam == _WM_LBUTTONUP:
             self._handle_lbutton_up()
             return
@@ -168,7 +168,7 @@ def launch_claude_desktop() -> None:
 
 def _try_uri_launch() -> bool:
     try:
-        os.startfile(_CLAUDE_URI)  # type: ignore[attr-defined]
+        os.startfile(_CLAUDE_URI)  # type: ignore[attr-defined]  # Windows-only stdlib
         return True
     except (OSError, AttributeError):
         return False
