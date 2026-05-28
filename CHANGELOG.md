@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+[Show all code changes](https://github.com/lawyerplayingaround/usage-monitor-for-claude/compare/v1.15.1-fork.1...HEAD)
+
+## [1.15.1-fork.1] - 2026-05-28
+
 > Fork notice: entries below this line are introduced by the `lawyerplayingaround` fork. All credit for the original app goes to [@jens-duttke](https://github.com/jens-duttke). Both code and the new application icon were developed with Claude (Anthropic) assistance, then reviewed and tested by the fork maintainer.
 
 ### Added
@@ -21,7 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Tray-icon right-click menu has two new entries (Icon style submenu and Double-click opens Claude Desktop toggle). Toggling either writes the new value to the registry and triggers an app restart (same pattern the existing Restart entry uses) so the change takes effect immediately.
 
-[Show all code changes](https://github.com/lawyerplayingaround/usage-monitor-for-claude/compare/v1.15.1...HEAD)
+[Show all code changes](https://github.com/lawyerplayingaround/usage-monitor-for-claude/compare/v1.15.1...v1.15.1-fork.1)
 
 ## [1.15.1] - 2026-05-17
 
