@@ -13,6 +13,20 @@ env/
 # PyInstaller build artifacts
 build/
 dist/
+pyinstaller-build/
+pyinstaller-dist/
+
+# Inno Setup / installer build artifacts
+installer/payload/
+installer-payload/
+installer-output/
+*.exe
+
+# Test / tooling caches
+.pytest_cache/
+
+# Per-machine notes (intentionally not tracked in the public repo)
+LOCATIONS.md
 
 # IDE
 .vscode/
