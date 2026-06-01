@@ -25,7 +25,7 @@
 ; ============================================================================
 
 #define MyAppName "Usage Monitor for Claude"
-#define MyAppVersion "1.15.1-fork.2"
+#define MyAppVersion "1.15.1-fork.win.2"
 #define MyAppPublisher "lawyerplayingaround"
 #define MyAppURL "https://github.com/lawyerplayingaround/usage-monitor-for-claude"
 #define MyAppExeName "UsageMonitorForClaude.exe"

@@ -7,11 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-[Show all code changes](https://github.com/lawyerplayingaround/usage-monitor-for-claude/compare/v1.15.1-fork.2...HEAD)
+[Show all code changes](https://github.com/lawyerplayingaround/usage-monitor-for-claude/compare/v1.15.1-fork.win.2...HEAD)
 
-## [1.15.1-fork.2] - 2026-06-01
+## [1.15.1-fork.win.2] - 2026-06-01
 
-> Fork notice: entries below this line are introduced by the `lawyerplayingaround` fork. Both code changes were developed with Claude (Anthropic) assistance, then reviewed and tested by the fork maintainer.
+> Fork notice: entries below this line are introduced by the `lawyerplayingaround` fork. All changes were developed with Claude (Anthropic) assistance, then reviewed and tested by the fork maintainer.
+>
+> Versioning: starting with this release the fork uses `<upstream-base>-fork.<platform>.<N>` (`win` for Windows, `mac` for macOS) so the two platform forks are unmistakable. This release supersedes the earlier same-day `v1.15.1-fork.2`, which was withdrawn because its new refresh button could be clipped off-screen on mixed-DPI multi-monitor setups (fixed below).
 
 ### Added
 
@@ -19,13 +21,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Localized the four new menu strings introduced in `v1.15.1-fork.1` (`menu_icon_style`, `icon_style_classic`, `icon_style_compact`, `menu_dblclick_open_claude`) across all 12 non-English locales (de/es/fr/hi/id/it/ja/ko/pt-BR/uk/zh-CN/zh-TW). Previously these labels stayed in English in every non-English menu — the registry default (`Compact`) and the double-click toggle now read in the user's language.
+- Popup footer (the "Updated … ago" status, the refresh button, and the app version) was clipped off the bottom of the window on a secondary monitor whose DPI scale differs from the primary. pywebview sizes the window's outer height correctly, but on the mismatched monitor the WebView viewport (`window.innerHeight`) came out shorter than requested, so the footer fell outside it. The popup now measures the viewport once while still transparent and grows the window by the deficit before revealing itself, so the footer is always visible with no resize flicker. The measured offset is remembered for the rest of the session to avoid re-measuring on each open.
+- Localized the four menu strings added by the fork (`menu_icon_style`, `icon_style_classic`, `icon_style_compact`, `menu_dblclick_open_claude`) across all 12 non-English locales (de/es/fr/hi/id/it/ja/ko/pt-BR/uk/zh-CN/zh-TW); previously they stayed in English in every non-English menu, so the registry default (`Compact`) and the double-click toggle now read in the user's language.
+- Shortened the popup's "next update" status label (e.g. English "Next update in 2m" → "Next in 2m", and the equivalent in other languages) so the full status line fits beside the refresh button at the 340 px popup width instead of being truncated with an ellipsis.
 
-[Show all code changes](https://github.com/lawyerplayingaround/usage-monitor-for-claude/compare/v1.15.1-fork.1...v1.15.1-fork.2)
+[Show all code changes](https://github.com/lawyerplayingaround/usage-monitor-for-claude/compare/v1.15.1-fork.win.1...v1.15.1-fork.win.2)
 
-## [1.15.1-fork.1] - 2026-05-28
+## [1.15.1-fork.win.1] - 2026-05-28
 
 > Fork notice: entries below this line are introduced by the `lawyerplayingaround` fork. All credit for the original app goes to [@jens-duttke](https://github.com/jens-duttke). Both code and the new application icon were developed with Claude (Anthropic) assistance, then reviewed and tested by the fork maintainer.
+>
+> Originally published as `v1.15.1-fork.1`; retagged under the platform-qualified scheme (`-fork.win.N`).
 
 ### Added
 
