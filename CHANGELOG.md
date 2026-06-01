@@ -7,7 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-[Show all code changes](https://github.com/lawyerplayingaround/usage-monitor-for-claude/compare/v1.15.1-fork.1...HEAD)
+[Show all code changes](https://github.com/lawyerplayingaround/usage-monitor-for-claude/compare/v1.15.1-fork.2...HEAD)
+
+## [1.15.1-fork.2] - 2026-06-01
+
+> Fork notice: entries below this line are introduced by the `lawyerplayingaround` fork. Both code changes were developed with Claude (Anthropic) assistance, then reviewed and tested by the fork maintainer.
+
+### Added
+
+- Manual refresh button in the popup footer (next to the existing "Updated X ago" status). Clicking it forces an immediate API fetch instead of waiting for the next scheduled poll; the icon spins while the request is in flight and the snapshot is pushed back as soon as it completes. The Python bridge runs the fetch on a daemon thread so the WebView2 message pump stays responsive.
+
+### Fixed
+
+- Localized the four new menu strings introduced in `v1.15.1-fork.1` (`menu_icon_style`, `icon_style_classic`, `icon_style_compact`, `menu_dblclick_open_claude`) across all 12 non-English locales (de/es/fr/hi/id/it/ja/ko/pt-BR/uk/zh-CN/zh-TW). Previously these labels stayed in English in every non-English menu — the registry default (`Compact`) and the double-click toggle now read in the user's language.
+
+[Show all code changes](https://github.com/lawyerplayingaround/usage-monitor-for-claude/compare/v1.15.1-fork.1...v1.15.1-fork.2)
 
 ## [1.15.1-fork.1] - 2026-05-28
 
