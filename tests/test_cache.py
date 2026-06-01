@@ -44,6 +44,21 @@ class TestLockBehavior(unittest.TestCase):
             cache._lock.release()
 
     @patch('usage_monitor_for_claude.cache.fetch_usage', return_value=_SUCCESS_DATA)
+    def test_force_skipped_when_lock_held(self, _mock_fetch):
+        """Even a forced refresh yields (returns None) when the lock is held.
+
+        force bypasses the cooldown, never the lock - a manual refresh that
+        collides with an in-flight poll must not block, it just no-ops.
+        """
+        cache = _make_cache()
+        cache._lock.acquire()
+        try:
+            result = cache.update(force=True)
+            self.assertIsNone(result.data)
+        finally:
+            cache._lock.release()
+
+    @patch('usage_monitor_for_claude.cache.fetch_usage', return_value=_SUCCESS_DATA)
     def test_update_succeeds_when_lock_free(self, _mock_fetch):
         """update() returns data when lock is not held."""
         cache = _make_cache()
@@ -118,6 +133,13 @@ class TestCooldownBehavior(unittest.TestCase):
         cache = _make_cache()
         with patch('usage_monitor_for_claude.cache.fetch_usage', return_value=_SUCCESS_DATA):
             result = cache.update()
+        self.assertIsNotNone(result.data)
+
+    def test_first_call_with_force_proceeds(self):
+        """First forced update proceeds too (the popup fetches on open, pre-poll)."""
+        cache = _make_cache()
+        with patch('usage_monitor_for_claude.cache.fetch_usage', return_value=_SUCCESS_DATA):
+            result = cache.update(force=True)
         self.assertIsNotNone(result.data)
 
     @patch('usage_monitor_for_claude.cache.fetch_usage', return_value=_ERROR_DATA)
@@ -318,6 +340,21 @@ class TestFailedTokenGuard(unittest.TestCase):
         cache._last_failed_token = 'same-token'
 
         result = cache.update()
+        self.assertIsNone(result.data)
+        mock_fetch.assert_not_called()
+
+    @patch('usage_monitor_for_claude.cache.read_access_token', return_value='same-token')
+    @patch('usage_monitor_for_claude.cache.fetch_usage', return_value=_AUTH_ERROR_DATA)
+    def test_force_still_respects_failed_token_guard(self, mock_fetch, _mock_token):
+        """force bypasses the cooldown but NOT the failed-token guard.
+
+        A forced refresh must not re-hammer the API with a token already known
+        to have failed auth, until the token actually changes.
+        """
+        cache = _make_cache()
+        cache._last_failed_token = 'same-token'
+
+        result = cache.update(force=True)
         self.assertIsNone(result.data)
         mock_fetch.assert_not_called()
 

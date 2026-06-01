@@ -476,6 +476,29 @@ class TestUpdateOrchestration(unittest.TestCase):
 
         self.assertEqual(self.app._last_response, {})
 
+    def test_update_defaults_to_non_forced(self):
+        """The periodic/startup update path must NOT force - it respects the poll cooldown."""
+        self.app.cache = MagicMock()
+        self.app.cache.update.return_value = UpdateResult(data=None)
+
+        self.app.update()
+
+        self.app.cache.update.assert_called_once_with(force=False)
+
+    def test_update_forwards_force_to_cache(self):
+        """update(force=True) - the manual refresh path - forwards force to the cache.
+
+        Guards the end-to-end refresh-button feature: a refactor dropping the
+        force passthrough would silently re-break it (the popup would land in
+        the poll cooldown again), which this test would catch.
+        """
+        self.app.cache = MagicMock()
+        self.app.cache.update.return_value = UpdateResult(data=None)
+
+        self.app.update(force=True)
+
+        self.app.cache.update.assert_called_once_with(force=True)
+
     @patch('usage_monitor_for_claude.app.format_tooltip', return_value='tooltip')
     @patch('usage_monitor_for_claude.app.create_icon_image')
     def test_success_updates_last_response(self, _icon, _tooltip):
