@@ -62,8 +62,9 @@
     "status_next_update": "Próxima actualización en {duration}",
     "status_refreshing": "Actualizando...",
     "already_running": "Usage Monitor for Claude v{running_version} ya se está ejecutando.\n\n¿Desea reemplazar la instancia en ejecución?",
-    "menu_icon_style": "Icon style",
-    "icon_style_classic": "Classic",
-    "icon_style_compact": "Compact",
-    "menu_dblclick_open_claude": "Double-click opens Claude Desktop"
+    "menu_icon_style": "Estilo del icono",
+    "icon_style_classic": "Clásico",
+    "icon_style_compact": "Compacto",
+    "menu_dblclick_open_claude": "Doble clic abre Claude Desktop",
+    "refresh": "Actualizar"
 }

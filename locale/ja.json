@@ -62,8 +62,9 @@
     "status_next_update": "次の更新まで{duration}",
     "status_refreshing": "更新中...",
     "already_running": "Usage Monitor for Claude v{running_version} は既に実行中です。\n\n実行中のインスタンスを置き換えますか？",
-    "menu_icon_style": "Icon style",
-    "icon_style_classic": "Classic",
-    "icon_style_compact": "Compact",
-    "menu_dblclick_open_claude": "Double-click opens Claude Desktop"
+    "menu_icon_style": "アイコンスタイル",
+    "icon_style_classic": "クラシック",
+    "icon_style_compact": "コンパクト",
+    "menu_dblclick_open_claude": "ダブルクリックで Claude Desktop を開く",
+    "refresh": "更新"
 }

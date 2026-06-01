@@ -62,8 +62,9 @@
     "status_next_update": "다음 업데이트 {duration} 후",
     "status_refreshing": "새로고침 중...",
     "already_running": "Usage Monitor for Claude v{running_version}가 실행 중입니다.\n\n실행 중인 인스턴스를 교체하시겠습니까?",
-    "menu_icon_style": "Icon style",
-    "icon_style_classic": "Classic",
-    "icon_style_compact": "Compact",
-    "menu_dblclick_open_claude": "Double-click opens Claude Desktop"
+    "menu_icon_style": "아이콘 스타일",
+    "icon_style_classic": "클래식",
+    "icon_style_compact": "컴팩트",
+    "menu_dblclick_open_claude": "더블 클릭으로 Claude Desktop 열기",
+    "refresh": "새로고침"
 }

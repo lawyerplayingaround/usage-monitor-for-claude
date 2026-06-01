@@ -165,6 +165,7 @@ def _init_config(snap: CacheSnapshot, next_poll_time: float | None = None) -> di
             'status_updated_s': T['status_updated_s'], 'status_updated': T['status_updated'],
             'status_next_update': T['status_next_update'], 'status_refreshing': T['status_refreshing'],
             'duration_hm': T['duration_hm'], 'duration_m': T['duration_m'], 'duration_s': T['duration_s'],
+            'refresh': T['refresh'],
         },
         'app_version': __version__,
         'data': _snapshot_to_dict(snap, next_poll_time=next_poll_time),
@@ -186,6 +187,10 @@ class _PopupApi:
 
     def open_url(self) -> None:
         webbrowser.open(CHANGELOG_URL)
+
+    def refresh(self) -> None:
+        """JS-triggered manual refresh - delegates to the popup."""
+        self._popup._request_refresh()
 
     def report_height(self, height: int) -> None:
         """Called by JS ResizeObserver when content height changes."""
@@ -219,6 +224,7 @@ class UsagePopup:
         """
         self.app = app
         self._running = True
+        self._refreshing = False
         self._closed = threading.Event()
         self._popup_hwnd = 0
         initial_height = 400
@@ -399,6 +405,38 @@ class UsagePopup:
         except Exception:
             pass
         self._closed.set()
+
+    def _request_refresh(self) -> None:
+        """Kick off a one-off API update on the user's request.
+
+        Called from JS via the pywebview bridge.  Guards against
+        re-entry and against running after the popup has been closed.
+        The fetch happens on a daemon thread so the WebView2 message
+        pump stays unblocked, and a fresh snapshot is pushed back to JS
+        in ``finally`` so the spinner clears whether the update
+        succeeded or raised.
+        """
+        if self._refreshing or not self._running:
+            return
+        self._refreshing = True
+
+        def worker() -> None:
+            try:
+                self.app.update()
+            finally:
+                self._refreshing = False
+                try:
+                    self._push_snapshot()
+                except Exception:
+                    pass
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _push_snapshot(self) -> None:
+        """Build a fresh popup payload from the cache and send it to JS."""
+        snap = self.app.cache.snapshot
+        data = _snapshot_to_dict(snap, next_poll_time=self.app._next_poll_time)
+        self._window.evaluate_js(f'updateData({json.dumps(data)})')
 
     def _update_loop(self) -> None:
         """Poll for data changes and push updates to the popup."""

@@ -65,5 +65,6 @@
     "menu_icon_style": "Icon style",
     "icon_style_classic": "Classic",
     "icon_style_compact": "Compact",
-    "menu_dblclick_open_claude": "Double-click opens Claude Desktop"
+    "menu_dblclick_open_claude": "Double-click opens Claude Desktop",
+    "refresh": "Refresh"
 }

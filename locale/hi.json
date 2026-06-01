@@ -62,8 +62,9 @@
     "status_next_update": "अगला अपडेट {duration} में",
     "status_refreshing": "रीफ़्रेश हो रहा है...",
     "already_running": "Usage Monitor for Claude v{running_version} पहले से चल रहा है।\n\nक्या आप चल रही प्रति को बदलना चाहते हैं?",
-    "menu_icon_style": "Icon style",
-    "icon_style_classic": "Classic",
-    "icon_style_compact": "Compact",
-    "menu_dblclick_open_claude": "Double-click opens Claude Desktop"
+    "menu_icon_style": "आइकन शैली",
+    "icon_style_classic": "क्लासिक",
+    "icon_style_compact": "कॉम्पैक्ट",
+    "menu_dblclick_open_claude": "डबल-क्लिक से Claude Desktop खुलता है",
+    "refresh": "रिफ़्रेश करें"
 }

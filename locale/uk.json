@@ -62,8 +62,9 @@
     "status_next_update": "Наступне оновлення через {duration}",
     "status_refreshing": "Оновлення...",
     "already_running": "Usage Monitor for Claude v{running_version} вже запущено.\n\nБажаєте замінити запущений екземпляр?",
-    "menu_icon_style": "Icon style",
-    "icon_style_classic": "Classic",
-    "icon_style_compact": "Compact",
-    "menu_dblclick_open_claude": "Double-click opens Claude Desktop"
+    "menu_icon_style": "Стиль піктограми",
+    "icon_style_classic": "Класичний",
+    "icon_style_compact": "Компактний",
+    "menu_dblclick_open_claude": "Подвійний клік відкриває Claude Desktop",
+    "refresh": "Оновити"
 }

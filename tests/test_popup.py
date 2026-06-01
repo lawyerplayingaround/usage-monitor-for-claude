@@ -12,7 +12,7 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 from usage_monitor_for_claude.cache import CacheSnapshot
-from usage_monitor_for_claude.popup import UsagePopup, _BASELINE_DPI, _MONITORINFO, _init_config, _snapshot_to_dict, _usage_entries
+from usage_monitor_for_claude.popup import UsagePopup, _BASELINE_DPI, _MONITORINFO, _PopupApi, _init_config, _snapshot_to_dict, _usage_entries
 
 
 def _snap(
@@ -493,6 +493,7 @@ class TestInitConfig(unittest.TestCase):
         self.assertEqual(t['duration_hm'], T['duration_hm'])
         self.assertEqual(t['duration_m'], T['duration_m'])
         self.assertEqual(t['duration_s'], T['duration_s'])
+        self.assertEqual(t['refresh'], T['refresh'])
 
     def test_app_version(self):
         """app_version matches the package version."""
@@ -507,6 +508,63 @@ class TestInitConfig(unittest.TestCase):
         config = _init_config(snap)
         self.assertEqual(config['data']['profile']['email'], 'a@b.com')
         self.assertEqual(set(config['data'].keys()), {'profile', 'usage', 'extra', 'installations', 'status'})
+
+
+# ---------------------------------------------------------------------------
+# _PopupApi.refresh
+# ---------------------------------------------------------------------------
+
+class TestPopupApiRefresh(unittest.TestCase):
+    """Tests for _PopupApi.refresh - the JS-callable manual refresh bridge."""
+
+    def test_refresh_delegates_to_request_refresh(self):
+        """Calling API.refresh forwards to the popup's _request_refresh."""
+        popup = MagicMock()
+        api = _PopupApi(popup)
+        api.refresh()
+        popup._request_refresh.assert_called_once_with()
+
+
+class TestRequestRefresh(unittest.TestCase):
+    """Tests for UsagePopup._request_refresh re-entry and lifecycle guards."""
+
+    def _bind(self, refreshing=False, running=True):
+        """Build a stub instance that exposes only the attributes _request_refresh touches."""
+        popup = UsagePopup.__new__(UsagePopup)
+        popup._refreshing = refreshing
+        popup._running = running
+        popup.app = MagicMock()
+        return popup
+
+    def test_skipped_when_already_refreshing(self):
+        """If a refresh is in flight, a second request is a no-op."""
+        popup = self._bind(refreshing=True)
+        with patch('threading.Thread') as thread_cls:
+            UsagePopup._request_refresh(popup)
+            thread_cls.assert_not_called()
+        self.assertTrue(popup._refreshing)
+        popup.app.update.assert_not_called()
+
+    def test_skipped_when_closed(self):
+        """If the popup has been closed, the request is dropped."""
+        popup = self._bind(running=False)
+        with patch('threading.Thread') as thread_cls:
+            UsagePopup._request_refresh(popup)
+            thread_cls.assert_not_called()
+        self.assertFalse(popup._refreshing)
+        popup.app.update.assert_not_called()
+
+    def test_spawns_worker_when_idle(self):
+        """Idle popup flips _refreshing and spawns a daemon worker thread."""
+        popup = self._bind(refreshing=False, running=True)
+        with patch('threading.Thread') as thread_cls:
+            UsagePopup._request_refresh(popup)
+            thread_cls.assert_called_once()
+            kwargs = thread_cls.call_args.kwargs
+            self.assertTrue(kwargs.get('daemon'))
+            self.assertTrue(callable(kwargs.get('target')))
+            thread_cls.return_value.start.assert_called_once()
+        self.assertTrue(popup._refreshing)
 
 
 # ---------------------------------------------------------------------------
