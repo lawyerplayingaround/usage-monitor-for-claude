@@ -293,9 +293,13 @@ class UsageMonitorForClaude:
 
     # Update orchestration
 
-    def update(self) -> None:
-        """Request a data refresh from the cache and process the result."""
-        result = self.cache.update()
+    def update(self, force: bool = False) -> None:
+        """Request a data refresh from the cache and process the result.
+
+        ``force=True`` (used by the popup's manual refresh) bypasses the
+        poll cooldown; see ``UsageCache.update``.
+        """
+        result = self.cache.update(force=force)
         if result.data is None:
             return
 

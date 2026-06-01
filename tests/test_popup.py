@@ -566,6 +566,48 @@ class TestRequestRefresh(unittest.TestCase):
             thread_cls.return_value.start.assert_called_once()
         self.assertTrue(popup._refreshing)
 
+    def _run_worker(self, popup):
+        """Capture the worker thread target from _request_refresh and run it inline."""
+        popup._push_snapshot = MagicMock()
+        with patch('threading.Thread') as thread_cls:
+            UsagePopup._request_refresh(popup)
+            target = thread_cls.call_args.kwargs['target']
+        target()
+        return popup
+
+    def test_worker_forces_update_then_clears_flag_and_pushes(self):
+        """The worker fetches with force=True (bypass cooldown), clears the flag, pushes."""
+        popup = self._bind(refreshing=False, running=True)
+        self._run_worker(popup)
+        popup.app.update.assert_called_once_with(force=True)
+        self.assertFalse(popup._refreshing)
+        popup._push_snapshot.assert_called_once_with()
+
+    def test_worker_clears_flag_even_when_update_raises(self):
+        """If app.update() raises, _refreshing is still cleared and no exception escapes."""
+        popup = self._bind(refreshing=False, running=True)
+        popup.app.update.side_effect = RuntimeError('boom')
+        self._run_worker(popup)  # must not raise
+        self.assertFalse(popup._refreshing)
+
+    def test_worker_swallows_push_snapshot_failure(self):
+        """A failure pushing the snapshot (e.g. window torn down) is swallowed."""
+        popup = self._bind(refreshing=False, running=True)
+        popup._push_snapshot = MagicMock(side_effect=RuntimeError('window gone'))
+        with patch('threading.Thread') as thread_cls:
+            UsagePopup._request_refresh(popup)
+            target = thread_cls.call_args.kwargs['target']
+        target()  # must not raise
+        self.assertFalse(popup._refreshing)
+
+    def test_request_refresh_allowed_again_after_completion(self):
+        """After a worker completes and clears the flag, a new request spawns again."""
+        popup = self._bind(refreshing=False, running=True)
+        self._run_worker(popup)  # completes, clears _refreshing
+        with patch('threading.Thread') as thread_cls:
+            UsagePopup._request_refresh(popup)
+            thread_cls.assert_called_once()
+
 
 # ---------------------------------------------------------------------------
 # Content-height -> window-height compensation
@@ -672,13 +714,91 @@ class TestHeightCompensation(unittest.TestCase):
         p._resize_and_position.assert_called_with(553)
         p._reveal.assert_called_once()
 
-    def test_layout_and_reveal_aborts_if_closed(self):
-        """If the popup is closed during layout, it does not reveal."""
+    def test_layout_and_reveal_aborts_sizing_if_closed(self):
+        """If the popup is closed before content is reported, no sizing happens.
+
+        (The reveal still runs via the finally block, but the real _reveal
+        no-ops when not running - see test_reveal_noop_when_closed.)
+        """
         p = self._popup(shown=False, reported=False)
         p._running = False
         with patch('time.sleep'):
             p._layout_and_reveal()
-        p._reveal.assert_not_called()
+        p._resize_and_position.assert_not_called()
+
+    def test_layout_and_reveal_shrinks_stale_pad(self):
+        """A pad cached from another monitor (too tall here) self-corrects down."""
+        p = self._popup(shown=False, pad=50, applied=0)
+        p._content_height = 553
+        # Window started at 603 (content+50); viewport reads 603 here (single-DPI),
+        # so deficit = 553-603 = -50 -> shrink pad to 0; next probe fits.
+        p._window.evaluate_js.side_effect = [603, 553]
+        with patch('time.sleep'):
+            p._layout_and_reveal()
+        self.assertEqual(p._height_pad, 0)
+        p._resize_and_position.assert_any_call(553)
+        p._reveal.assert_called_once()
+
+    def test_layout_and_reveal_reveals_even_when_evaluate_js_raises(self):
+        """An exception while measuring still reveals (finally) and leaves pad unchanged."""
+        p = self._popup(shown=False, pad=0, applied=400)
+        p._content_height = 553
+        p._window.evaluate_js.side_effect = RuntimeError('webview gone')
+        with patch('time.sleep'):
+            p._layout_and_reveal()
+        self.assertEqual(p._height_pad, 0)
+        p._reveal.assert_called_once()
+
+    def test_layout_and_reveal_continues_on_zero_inner(self):
+        """A falsy innerHeight (0/None) is skipped without changing the pad."""
+        p = self._popup(shown=False, pad=0, applied=400)
+        p._content_height = 553
+        p._window.evaluate_js.side_effect = [0, 553]
+        with patch('time.sleep'):
+            p._layout_and_reveal()
+        self.assertEqual(p._height_pad, 0)
+        p._reveal.assert_called_once()
+
+    def test_apply_height_suppresses_change_equal_to_deadband(self):
+        """A change of exactly the dead-band is suppressed (<= boundary)."""
+        p = self._popup(pad=0, applied=559)
+        p._content_height = 553  # |553-559| == 6 == deadband
+        p._apply_height()
+        p._resize_and_position.assert_not_called()
+
+    def test_apply_height_applies_change_just_over_deadband(self):
+        """A change just past the dead-band is applied."""
+        p = self._popup(pad=0, applied=560)
+        p._content_height = 553  # |553-560| == 7 > deadband
+        p._apply_height()
+        p._resize_and_position.assert_called_once_with(553)
+
+    def test_reveal_noop_when_closed(self):
+        """The real _reveal does nothing (stays hidden, no thread) when not running."""
+        p = UsagePopup.__new__(UsagePopup)
+        p._shown = False
+        p._running = False
+        with patch('threading.Thread') as thread_cls:
+            UsagePopup._reveal(p)
+            thread_cls.assert_not_called()
+        self.assertFalse(p._shown)
+
+    def test_reveal_is_best_effort_when_sizing_raises(self):
+        """If sizing raises, _reveal still marks shown + starts the update loop.
+
+        Guarantees the popup never ends up invisible-and-undismissable.
+        """
+        p = UsagePopup.__new__(UsagePopup)
+        p._shown = False
+        p._running = True
+        p._popup_hwnd = 0
+        p._apply_height = MagicMock(side_effect=RuntimeError('window torn down'))
+        p._update_loop = MagicMock()
+        with patch('threading.Thread') as thread_cls:
+            UsagePopup._reveal(p)  # must not raise
+            thread_cls.assert_called_once()
+            thread_cls.return_value.start.assert_called_once()
+        self.assertTrue(p._shown)
 
 
 # ---------------------------------------------------------------------------

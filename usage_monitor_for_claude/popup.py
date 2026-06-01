@@ -337,53 +337,79 @@ class UsagePopup:
         monitor's DPI before the viewport is measured.  This is deliberately
         *not* a tight loop: re-measuring and re-resizing repeatedly creates a
         feedback oscillation on mixed-DPI multi-monitor setups (each resize
-        re-rasterizes and shifts the measured height).  All of this happens
-        while the window is fully transparent, so it is revealed exactly once
-        at the final size with no visible jump.  On a single-DPI setup the
-        deficit is ~0 and the first pass exits immediately.
+        re-rasterizes and shifts the measured height).  The correction is
+        bidirectional, so a wrong starting pad self-corrects.  All of this
+        happens while the window is fully transparent, so it is revealed
+        exactly once at the final size with no visible jump.  On a single-DPI
+        setup the deficit is ~0 and the first pass exits immediately.
+
+        The body runs under ``try/finally`` so ``_reveal`` is reached on any
+        path - an exception during sizing must never leave the window stuck
+        transparent (invisible and, because the dismiss watcher gates on
+        ``_shown``, undismissable).
         """
-        waited = 0.0
-        while self._running and not self._content_reported and waited < 2.5:
-            time.sleep(0.05)
-            waited += 0.05
-        if not self._running:
-            return
-
-        # Initial size + position on the tray monitor.
-        self._apply_height(force=True)
-
-        # Bounded correction: measure the viewport deficit after a settle and
-        # grow the window by it, at most twice.  Never re-measures in a loop.
-        for _ in range(2):
-            time.sleep(0.3)
+        try:
+            waited = 0.0
+            while self._running and not self._content_reported and waited < 2.5:
+                time.sleep(0.05)
+                waited += 0.05
             if not self._running:
                 return
-            try:
-                inner = self._window.evaluate_js('window.innerHeight')
-            except Exception:
-                break
-            if not inner:
-                continue
-            deficit = self._content_height - int(inner)
-            if deficit <= self._HEIGHT_DEADBAND:
-                break
-            new_pad = max(0, min(300, self._height_pad + deficit))
-            if new_pad == self._height_pad:
-                break
-            self._height_pad = new_pad
-            UsagePopup._learned_pad = new_pad
+
+            # Initial size + position on the tray monitor.
             self._apply_height(force=True)
 
-        self._reveal()
+            # Bounded correction: after a settle (so WebView2 has re-rasterized
+            # at the tray monitor's DPI), measure the viewport and adjust the
+            # window by the deficit - at most twice.  Deliberately not a tight
+            # loop: re-measuring/re-resizing repeatedly oscillates on mixed-DPI
+            # multi-monitor setups.  The adjustment is bidirectional: a positive
+            # deficit grows the window (viewport too short, footer would clip);
+            # a negative deficit shrinks it (e.g. a stale pad cached from another
+            # monitor leaving blank space) so a wrong starting pad self-corrects.
+            for _ in range(2):
+                time.sleep(0.3)
+                if not self._running:
+                    return
+                try:
+                    raw = self._window.evaluate_js('window.innerHeight')
+                    inner = int(raw) if raw else 0
+                except Exception:
+                    break
+                if not inner:
+                    continue
+                deficit = self._content_height - inner
+                if abs(deficit) <= self._HEIGHT_DEADBAND:
+                    break
+                new_pad = max(0, min(300, self._height_pad + deficit))
+                if new_pad == self._height_pad:
+                    break
+                self._height_pad = new_pad
+                UsagePopup._learned_pad = new_pad
+                self._apply_height(force=True)
+        finally:
+            # Always reveal - never leave the window stuck transparent (which
+            # would be both invisible AND undismissable, since _dismiss_watch
+            # gates on _shown) if an exception escaped the sizing logic above.
+            self._reveal()
 
     def _reveal(self) -> None:
-        """Make the popup visible after it has been correctly sized."""
+        """Make the popup visible after it has been correctly sized.
+
+        Best-effort: even if the final resize or the layered-style removal
+        raises (e.g. the window was torn down mid-layout), ``_shown`` is still
+        set so the dismiss watcher can close the popup - it is never left both
+        invisible and undismissable.
+        """
         if self._shown or not self._running:
             return
-        self._apply_height(force=True)
-        # Remove the layered style to restore normal rendering
-        ex_style = ctypes.windll.user32.GetWindowLongW(self._popup_hwnd, _GWL_EXSTYLE)
-        ctypes.windll.user32.SetWindowLongW(self._popup_hwnd, _GWL_EXSTYLE, ex_style & ~_WS_EX_LAYERED)
+        try:
+            self._apply_height(force=True)
+            # Remove the layered style to restore normal rendering
+            ex_style = ctypes.windll.user32.GetWindowLongW(self._popup_hwnd, _GWL_EXSTYLE)
+            ctypes.windll.user32.SetWindowLongW(self._popup_hwnd, _GWL_EXSTYLE, ex_style & ~_WS_EX_LAYERED)
+        except Exception:
+            pass
         self._shown = True
         threading.Thread(target=self._update_loop, daemon=True).start()
 
@@ -518,12 +544,15 @@ class UsagePopup:
     def _request_refresh(self) -> None:
         """Kick off a one-off API update on the user's request.
 
-        Called from JS via the pywebview bridge.  Guards against
-        re-entry and against running after the popup has been closed.
-        The fetch happens on a daemon thread so the WebView2 message
-        pump stays unblocked, and a fresh snapshot is pushed back to JS
-        in ``finally`` so the spinner clears whether the update
-        succeeded or raised.
+        Called from JS via the pywebview bridge.  Guards against re-entry and
+        against running after the popup has been closed.  The fetch happens on
+        a daemon thread (so the WebView2 message pump stays unblocked) and is
+        ``force``\\ d: a manual refresh must bypass the ``POLL_FAST`` politeness
+        cooldown, otherwise - because the popup itself fetches on open - the
+        click almost always lands inside the cooldown and is silently dropped.
+        The 429 rate-limit backoff, the concurrency lock, and the failed-token
+        guard are NOT bypassed.  A fresh snapshot is pushed back to JS in
+        ``finally`` so the spinner clears whether the update succeeded or raised.
         """
         if self._refreshing or not self._running:
             return
@@ -531,7 +560,13 @@ class UsagePopup:
 
         def worker() -> None:
             try:
-                self.app.update()
+                self.app.update(force=True)
+            except Exception:
+                # The fetch already handles its own API/network errors; guard
+                # here only so an unexpected failure cannot kill this daemon
+                # thread with an unhandled traceback. The snapshot push below
+                # still reflects any error state to the popup.
+                pass
             finally:
                 self._refreshing = False
                 try:

@@ -132,6 +132,40 @@ class TestCooldownBehavior(unittest.TestCase):
         self.assertIsNotNone(result.data)
         mock_fetch.assert_called_once()
 
+    @patch('usage_monitor_for_claude.cache.fetch_usage', return_value=_SUCCESS_DATA)
+    def test_force_bypasses_cooldown(self, mock_fetch):
+        """force=True fetches even within the POLL_FAST cooldown window.
+
+        This is what makes the popup's manual refresh button actually fetch:
+        the popup fetches on open, so a click lands inside the cooldown.
+        """
+        cache = _make_cache()
+        cache.update()
+        mock_fetch.reset_mock()
+
+        # A normal call here would be skipped (cooldown); force must not be.
+        result = cache.update(force=True)
+        self.assertIsNotNone(result.data)
+        mock_fetch.assert_called_once()
+
+    @patch('usage_monitor_for_claude.cache.fetch_usage', return_value={'error': 'HTTP 429', 'rate_limited': True})
+    @patch('usage_monitor_for_claude.cache.time')
+    def test_force_still_respects_rate_limit_backoff(self, mock_time, mock_fetch):
+        """force=True bypasses the cooldown but NOT the 429 rate-limit backoff.
+
+        A forced refresh must never hammer an API that has told us to back off.
+        """
+        cache = _make_cache()
+        mock_time.time.return_value = 1000.0
+        cache.update()  # triggers a 429 -> sets _rate_limit_until
+        mock_fetch.reset_mock()
+
+        # Still inside the backoff window: even a forced refresh is skipped.
+        mock_time.time.return_value = 1050.0
+        result = cache.update(force=True)
+        self.assertIsNone(result.data)
+        mock_fetch.assert_not_called()
+
 
 # ---------------------------------------------------------------------------
 # Success state management
