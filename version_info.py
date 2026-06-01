@@ -2,8 +2,8 @@
 
 VSVersionInfo(
     ffi=FixedFileInfo(
-        filevers=(1, 15, 1, 4),
-        prodvers=(1, 15, 1, 4),
+        filevers=(1, 15, 1, 5),
+        prodvers=(1, 15, 1, 5),
         mask=0x3F,
         flags=0x0,
         OS=0x40004,          # VOS_NT_WINDOWS32
@@ -17,11 +17,11 @@ VSVersionInfo(
                 [
                     StringStruct('CompanyName', 'Jens Duttke'),
                     StringStruct('FileDescription', 'Usage Monitor for Claude'),
-                    StringStruct('FileVersion', '1.15.1.4'),
+                    StringStruct('FileVersion', '1.15.1.5'),
                     StringStruct('InternalName', 'UsageMonitorForClaude'),
                     StringStruct('OriginalFilename', 'UsageMonitorForClaude.exe'),
                     StringStruct('ProductName', 'Usage Monitor for Claude'),
-                    StringStruct('ProductVersion', '1.15.1.4'),
+                    StringStruct('ProductVersion', '1.15.1.5'),
                 ],
             ),
         ]),

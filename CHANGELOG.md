@@ -7,7 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-[Show all code changes](https://github.com/lawyerplayingaround/usage-monitor-for-claude/compare/v1.15.1-fork.win.4...HEAD)
+[Show all code changes](https://github.com/lawyerplayingaround/usage-monitor-for-claude/compare/v1.15.1-fork.win.5...HEAD)
+
+## [1.15.1-fork.win.5] - 2026-06-01
+
+> Fork notice: these two popup refinements were ported from the macOS fork (`mac.5`), developed with Claude (Anthropic) assistance and reviewed/tested by the fork maintainer. They are bundled-asset (popup) changes only — the Python update path is unchanged from `win.4`.
+
+### Changed
+
+- The popup's refresh button now greys out for about 15 seconds after a click, then re-enables on its own. Every click forces an immediate API fetch, so rapid clicking could burst Anthropic's usage endpoint into an HTTP 429 rate limit; the short cooldown prevents that. The first click still fires instantly, and the disabled state is visible rather than a silent dead-click.
+
+### Fixed
+
+- A long status message — such as a rate-limit error — is no longer truncated next to the app version. When the footer is in its error state the message now wraps onto multiple lines and the popup grows to fit it (the version number is hidden in that state so the full text has room). The complete status text is also available as a hover tooltip.
+
+[Show all code changes](https://github.com/lawyerplayingaround/usage-monitor-for-claude/compare/v1.15.1-fork.win.4...v1.15.1-fork.win.5)
 
 ## [1.15.1-fork.win.4] - 2026-06-01
 

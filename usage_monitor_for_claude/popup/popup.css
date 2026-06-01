@@ -176,9 +176,12 @@ footer {
 
         &:hover { color: var(--fg-heading); }
         &.spinning { animation: spin 0.7s linear infinite; }
+        &:disabled { opacity: 0.35; cursor: default; }
+        &:disabled:hover { color: var(--fg-dim); }
     }
 
     & > #statusText {
+        flex: 1;
         min-width: 0;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -190,7 +193,13 @@ footer {
         margin-left: auto;
     }
 
-    &.error > #statusText { color: var(--bar-fg-warn); }
+    &.error { align-items: flex-start; }
+    &.error > #statusText {
+        color: var(--bar-fg-warn);
+        overflow: visible;
+        white-space: normal;
+    }
+    &.error > #appVersion { display: none; }
 }
 
 @keyframes spin {

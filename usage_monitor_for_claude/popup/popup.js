@@ -2,6 +2,12 @@ let els;
 let statusState = {};
 let translations = {};
 let textTimerId = null;
+let refreshCooldownId = null;
+
+// After a manual refresh, briefly disable the button so rapid clicks cannot
+// burst-fetch the usage endpoint into a rate limit. The first click is still
+// instant; the disabled state is visible (greyed), never a silent dead-click.
+const REFRESH_COOLDOWN_MS = 15000;
 
 /**
  * Trigger an immediate refresh on the host.
@@ -11,12 +17,30 @@ let textTimerId = null;
  * from Python clears the spinner via updateStatus().
  */
 function requestRefresh() {
-    if (statusState.refreshing) return;
+    if (statusState.refreshing || els.refreshBtn.disabled) return;
+    if (!window.pywebview?.api?.refresh) return;
     statusState.refreshing = true;
     els.refreshBtn.classList.add('spinning');
-    if (window.pywebview?.api?.refresh) {
-        pywebview.api.refresh();
-    }
+    startRefreshCooldown();
+    tickStatusText();
+    pywebview.api.refresh();
+}
+
+/**
+ * Disable the refresh button for a short cooldown after a manual refresh.
+ *
+ * Each click forces an immediate API fetch, so rapid clicking could burst the
+ * usage endpoint into an HTTP 429.  The first click still fires instantly; the
+ * button greys out for REFRESH_COOLDOWN_MS, then re-enables - never a silent
+ * dead-click.
+ */
+function startRefreshCooldown() {
+    els.refreshBtn.disabled = true;
+    if (refreshCooldownId) clearTimeout(refreshCooldownId);
+    refreshCooldownId = setTimeout(() => {
+        refreshCooldownId = null;
+        els.refreshBtn.disabled = false;
+    }, REFRESH_COOLDOWN_MS);
 }
 
 /**
@@ -156,6 +180,7 @@ function updateStatus(status) {
     } else {
         statusState = {};
         els.statusText.textContent = status.text || '';
+        els.statusText.title = status.text || '';
         els.statusSection.classList.toggle('error', !!status.is_error);
     }
 }
@@ -190,6 +215,7 @@ function tickStatusText() {
     }
 
     els.statusText.textContent = parts.join(' \u00b7 ');
+    els.statusText.title = els.statusText.textContent;
 }
 
 /**
