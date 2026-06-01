@@ -59,7 +59,7 @@
     "server_error": "Anthropic API अस्थायी रूप से अनुपलब्ध है (HTTP {code})।",
     "status_updated": "{duration} पहले अपडेट किया गया",
     "status_updated_s": "{s}s पहले अपडेट किया गया",
-    "status_next_update": "अगला अपडेट {duration} में",
+    "status_next_update": "अगला {duration} में",
     "status_refreshing": "रीफ़्रेश हो रहा है...",
     "already_running": "Usage Monitor for Claude v{running_version} पहले से चल रहा है।\n\nक्या आप चल रही प्रति को बदलना चाहते हैं?",
     "menu_icon_style": "आइकन शैली",

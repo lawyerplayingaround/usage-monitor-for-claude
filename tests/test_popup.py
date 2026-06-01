@@ -568,6 +568,120 @@ class TestRequestRefresh(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
+# Content-height -> window-height compensation
+# ---------------------------------------------------------------------------
+
+class TestHeightCompensation(unittest.TestCase):
+    """Tests for _set_content_height / _apply_height / _layout_and_reveal.
+
+    These cover the fix for the footer being clipped on a secondary monitor
+    whose DPI scale differs from the primary: the WebView viewport comes out
+    shorter than the requested window height, so the window must be grown by
+    the measured deficit (``_height_pad``) - all while still transparent, so
+    the reveal happens once at the final size with no visible jump.
+    """
+
+    def setUp(self):
+        self._saved_pad = UsagePopup._learned_pad
+        self.addCleanup(lambda: setattr(UsagePopup, '_learned_pad', self._saved_pad))
+
+    def _popup(self, *, shown=False, pad=0, applied=400, reported=True):
+        p = UsagePopup.__new__(UsagePopup)
+        p._content_height = 400
+        p._applied_height = applied
+        p._height_pad = pad
+        p._shown = shown
+        p._running = True
+        p._content_reported = reported
+        p._window = MagicMock()
+        p._resize_and_position = MagicMock()
+        p._reveal = MagicMock()
+        return p
+
+    def test_set_content_height_records_and_flags(self):
+        """Reporting a height stores it and marks content as reported."""
+        p = self._popup(shown=False, reported=False)
+        p._set_content_height(553)
+        self.assertEqual(p._content_height, 553)
+        self.assertTrue(p._content_reported)
+        # Before reveal, sizing is owned by the coordinator, not this call.
+        p._resize_and_position.assert_not_called()
+
+    def test_set_content_height_reapplies_after_reveal(self):
+        """After reveal, a content change re-applies the height directly."""
+        p = self._popup(shown=True, pad=50, applied=0)
+        p._set_content_height(553)
+        p._resize_and_position.assert_called_once_with(603)
+
+    def test_set_content_height_ignores_zero(self):
+        """A zero height (transient) is ignored."""
+        p = self._popup(shown=True)
+        p._set_content_height(0)
+        p._resize_and_position.assert_not_called()
+
+    def test_apply_height_uses_content_plus_pad(self):
+        """Window target is content height plus the pad."""
+        p = self._popup(pad=50, applied=0)
+        p._content_height = 553
+        p._apply_height()
+        p._resize_and_position.assert_called_once_with(603)
+
+    def test_apply_height_noop_when_unchanged(self):
+        """No resize when the target equals the already-applied height."""
+        p = self._popup(pad=0, applied=553)
+        p._content_height = 553
+        p._apply_height()
+        p._resize_and_position.assert_not_called()
+
+    def test_apply_height_deadband_ignores_small_change(self):
+        """A sub-dead-band change is ignored (jitter suppression)."""
+        p = self._popup(pad=50, applied=600)
+        p._content_height = 553  # target 603, only 3 px from applied 600
+        p._apply_height()
+        p._resize_and_position.assert_not_called()
+
+    def test_apply_height_force_bypasses_deadband(self):
+        """force=True applies even a sub-dead-band change."""
+        p = self._popup(pad=50, applied=600)
+        p._content_height = 553  # target 603
+        p._apply_height(force=True)
+        p._resize_and_position.assert_called_once_with(603)
+
+    def test_layout_and_reveal_bumps_pad_on_deficit(self):
+        """A short viewport grows the pad, then the window is revealed once."""
+        p = self._popup(shown=False, pad=0, applied=400)
+        p._content_height = 553
+        # viewport 503 (deficit 50) on the first probe, then 553 (converged)
+        p._window.evaluate_js.side_effect = [503, 553]
+        with patch('time.sleep'):
+            p._layout_and_reveal()
+        self.assertEqual(p._height_pad, 50)
+        self.assertEqual(UsagePopup._learned_pad, 50)
+        # Grown window was applied (553 + 50) and the reveal happened once.
+        p._resize_and_position.assert_any_call(603)
+        p._reveal.assert_called_once()
+
+    def test_layout_and_reveal_no_pad_when_viewport_fits(self):
+        """When the viewport already fits, the pad stays 0 and it reveals."""
+        p = self._popup(shown=False, pad=0, applied=400)
+        p._content_height = 553
+        p._window.evaluate_js.return_value = 553
+        with patch('time.sleep'):
+            p._layout_and_reveal()
+        self.assertEqual(p._height_pad, 0)
+        p._resize_and_position.assert_called_with(553)
+        p._reveal.assert_called_once()
+
+    def test_layout_and_reveal_aborts_if_closed(self):
+        """If the popup is closed during layout, it does not reveal."""
+        p = self._popup(shown=False, reported=False)
+        p._running = False
+        with patch('time.sleep'):
+            p._layout_and_reveal()
+        p._reveal.assert_not_called()
+
+
+# ---------------------------------------------------------------------------
 # _tray_position
 # ---------------------------------------------------------------------------
 
