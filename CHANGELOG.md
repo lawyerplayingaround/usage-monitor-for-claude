@@ -7,7 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-[Show all code changes](https://github.com/lawyerplayingaround/usage-monitor-for-claude/compare/v1.15.1-fork.win.2...HEAD)
+[Show all code changes](https://github.com/lawyerplayingaround/usage-monitor-for-claude/compare/v1.15.1-fork.win.4...HEAD)
+
+## [1.15.1-fork.win.4] - 2026-06-01
+
+> Fork notice: fixes surfaced by hands-on testing and an exhaustive code review, developed with Claude (Anthropic) assistance and reviewed/tested by the fork maintainer.
+>
+> Version note: this release is numbered `win.4` (skipping `win.3`, which was a local-only build that was never published) so the Windows and macOS forks share the same `fork.<platform>.4` version.
+
+### Fixed
+
+- The popup's refresh button now actually refreshes. It forced a fetch through the normal update path, which honors the `poll_fast` politeness cooldown (120 s by default) — and because the popup fetches when it opens, a click almost always landed inside that cooldown, so the fetch was silently dropped and nothing changed. The manual refresh now passes `force=True`, which bypasses **only** the cooldown; the concurrency lock, the server-side 429 rate-limit backoff, and the failed-token guard are all still honored, so a forced refresh never hammers a throttled API.
+- The popup is now guaranteed to become visible. The transparent measure-and-size phase runs under `try/finally`, so an exception while sizing can no longer leave the window stuck transparent — which would have been both invisible and (because the dismiss watcher keys off the shown state) undismissable. `_reveal` is also best-effort: it marks the popup shown and starts the update loop even if the final resize throws.
+- The mixed-DPI viewport correction is now bidirectional. A per-session offset learned on one monitor now self-corrects (shrinks) when the popup later opens on a monitor with a different DPI scale, instead of leaving blank space below the content.
+- The viewport measurement is robust to non-integer / `None` return values.
+- The manual-refresh worker thread can no longer die with an unhandled traceback if a fetch unexpectedly raises; the spinner still clears and a fresh snapshot is still pushed.
+
+[Show all code changes](https://github.com/lawyerplayingaround/usage-monitor-for-claude/compare/v1.15.1-fork.win.2...v1.15.1-fork.win.4)
 
 ## [1.15.1-fork.win.2] - 2026-06-01
 
