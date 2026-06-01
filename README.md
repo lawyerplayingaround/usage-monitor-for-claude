@@ -15,6 +15,8 @@ A native Windows tray app that shows your Claude usage at a glance - lightweight
 
 Every change below is opt-in via the tray right-click menu. The upstream behavior remains the default for anyone who picks the Classic icon style and keeps the double-click action off.
 
+![The fork's tray right-click menu, showing the Icon style submenu and the double-click toggle](screenshot-menu.png)
+
 - **Compact icon layout** (right-click → Icon style → Compact). A single bar (the 5-hour session) instead of two, with a larger thin percentage on top. Designed for tighter legibility after the Windows tray downscales the icon to ~16-24 px. Switching back to Classic restores upstream's two-bar layout. Both options live alongside the existing `icon_fields` JSON setting.
 - **Double-click opens Claude Desktop** (right-click → Double-click opens Claude Desktop). Single click keeps showing the usage popup; double click launches the installed Claude Desktop app via its registered `claude:` URL handler (with a `claude.ai` web fallback if Claude Desktop is not installed).
 - **Optional Windows installer** in addition to the portable EXE. The installer (`UsageMonitorForClaude-Setup-vX.Y.Z.exe`) places the app under `%LOCALAPPDATA%\UsageMonitorForClaude`, registers a Start Menu shortcut and (optionally) autostart, and shows up in Add / Remove Programs for clean uninstall. The portable EXE distribution is unchanged from upstream - both ship side-by-side in each fork release. Per-user install only, no admin rights required.
