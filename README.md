@@ -2,7 +2,7 @@
 > **This repository is archived. Windows and macOS development continues in one place:**
 > **https://github.com/lawyerplayingaround/usage-monitor-for-claude-mac**
 >
-> That repository builds the Windows portable EXE, the Windows installer, and the macOS app from a single source tree, based on upstream v1.20.0 (this repository stopped at 1.15.1). Existing releases here remain downloadable.
+> That repository builds the Windows portable EXE and the macOS app from a single source tree, based on upstream v1.20.0 (this repository stopped at 1.15.1). Existing releases here remain downloadable.
 
 # Usage Monitor for Claude
 
